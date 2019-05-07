@@ -1,0 +1,8 @@
+*.egg*
+*.sh
+*.sk
+__pycache__
+results
+src
+miniconda*
+anaconda*
