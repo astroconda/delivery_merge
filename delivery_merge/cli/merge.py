@@ -18,9 +18,9 @@ def main():
     name = args.env_name
     base_spec = args.base_spec
     dmfile = args.dmfile
-    channels = ['https://astroconda.org/channel/main',
+    channels = ['http://ssb.stsci.edu/astroconda',
                 'defaults',
-                'http://ssb.stsci.edu/conda-dev']
+                'http://ssb.stsci.edu/astroconda-dev']
     delivery_root = 'delivery'
     yamlfile = os.path.join(delivery_root, name + '.yml')
     specfile = os.path.join(delivery_root, name + '.txt')
