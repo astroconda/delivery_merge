@@ -2,8 +2,7 @@ import os
 import re
 import yaml
 from .conda import conda, conda_env_load
-from .git import git
-from .utils import pushd
+from .utils import git, pushd
 from glob import glob
 from subprocess import run
 

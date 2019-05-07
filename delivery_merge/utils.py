@@ -14,6 +14,10 @@ def sh(prog, *args):
     return run(command, capture_output=True)
 
 
+def git(*args):
+    return sh('git', *args)
+
+
 def getenv(s):
     """ Convert string of key pairs to dictionary format
     """

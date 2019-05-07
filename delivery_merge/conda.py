@@ -71,11 +71,4 @@ def conda_env_load(env_name):
 
 
 def conda(*args):
-    command = ['conda']
-    tmp = []
-    for arg in args:
-        tmp += arg.split()
-
-    command += tmp
-    print(f'Running: {" ".join(command)}')
-    return run(command, capture_output=True)
+    return sh('conda', *args)
