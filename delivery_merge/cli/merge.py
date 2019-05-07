@@ -7,12 +7,21 @@ from argparse import ArgumentParser
 def main():
     parser = ArgumentParser()
     parser.add_argument('--env-name', default='delivery',
-                        help='name of environment')
-    parser.add_argument('--installer-version', required=True,
+                        help='name of conda environment')
+    parser.add_argument('--output-dir',
+                        default=os.path.normpath('./delivery'),
+                        help='path to store delivery data')
+    parser.add_argument('--installer-version',
+                        required=True,
                         help='miniconda3 installer version')
-    parser.add_argument('--run-tests', action='store_true')
-    parser.add_argument('--dmfile', required=True)
-    parser.add_argument('base_spec')
+    parser.add_argument('--run-tests',
+                        action='store_true',
+                        help='scan packages in base_spec for tests to execute')
+    parser.add_argument('--dmfile',
+                        required=True,
+                        help='file with list providing packages to merge')
+    parser.add_argument('base_spec',
+                        help='@EXPLICIT dump file')
     args = parser.parse_args()
 
     name = args.env_name
@@ -21,7 +30,7 @@ def main():
     channels = ['http://ssb.stsci.edu/astroconda',
                 'defaults',
                 'http://ssb.stsci.edu/astroconda-dev']
-    delivery_root = 'delivery'
+    delivery_root = args.output_dir
     yamlfile = os.path.join(delivery_root, name + '.yml')
     specfile = os.path.join(delivery_root, name + '.txt')
 
@@ -49,8 +58,9 @@ def main():
         spec.write(proc.stdout.decode())
 
     if args.run_tests:
+        results = os.path.join(delivery_root, 'results')
         for package in testable_packages(args.dmfile, prefix):
             print(f"Running tests: {package}")
-            integration_test(package, name)
+            integration_test(package, name, results_root=results)
 
     print("Done!")
