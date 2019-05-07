@@ -39,7 +39,7 @@ def dmfile(filename):
             comment_pos = comment_find(line)
 
             if comment_pos >= 0:
-                line = line[:comment_pos]
+                line = line[:comment_pos].strip()
 
             if not line:
                 continue
@@ -72,6 +72,7 @@ def env_combine(filename, conda_env, conda_channels=[]):
                  conda_env, channels_result, packages_result)
     if proc.stderr:
         print(proc.stderr.decode())
+
     proc.check_returncode()
 
 
