@@ -9,12 +9,25 @@ from subprocess import run
 ENV_ORIG = os.environ.copy()
 
 
+class BadPlatform(Exception):
+    pass
+
+
 def conda_installer(ver, prefix='./miniconda3'):
+    """ Install miniconda into a user-defined prefix and return its path
+
+    :param ver: str: miniconda version (not conda version)
+    :param prefix: str: path to install miniconda into
+    :returns: str: absolute path to installation prefix
+    :raises delivery_merge.conda.BadPlatform: when platform check fails
+    :raises subprocess.CalledProcessError: via check_returncode method
+    """
     assert isinstance(ver, str)
     assert isinstance(prefix, str)
 
     prefix = os.path.abspath(prefix)
 
+    # Is miniconda already installed?
     if os.path.exists(prefix):
         print(f'{prefix}: exists', file=sys.stderr)
         return prefix
@@ -23,36 +36,58 @@ def conda_installer(ver, prefix='./miniconda3'):
     version = ver
     arch = 'x86_64'
     platform = sys.platform
+
+    # Emit their installer's concept of "platform"
     if sys.platform == 'darwin':
         platform = 'MacOSX'
     elif sys.platform == 'linux':
         platform = 'Linux'
+    else:
+        raise BadPlatform(f'{sys.platform} is not supported.')
 
     url_root = 'https://repo.continuum.io/miniconda'
     installer = f'{name}-{version}-{platform}-{arch}.sh'
     url = f'{url_root}/{installer}'
     install_command = f'./{installer} -b -p {prefix}'.split()
 
+    # Download installer
     if not os.path.exists(installer):
         with requests.get(url, stream=True) as data:
             with open(installer, 'wb') as fd:
                 for chunk in data.iter_content(chunk_size=16384):
                     fd.write(chunk)
         os.chmod(installer, 0o755)
-    run(install_command)
+
+    # Perform installation
+    run(install_command).check_returncode()
 
     return prefix
 
 
 def conda_init_path(prefix):
+    """ Redefines $PATH so subsequent shell calls use the just-installed
+    miniconda prefix. This function will not continue prepending to $PATH
+    so it's safe to call more than once.
+
+    :param prefix: str: path to miniconda installation
+    :returns: None
+    """
     if os.environ['PATH'] != ENV_ORIG['PATH']:
         os.environ['PATH'] = ENV_ORIG['PATH']
     os.environ['PATH'] = ':'.join([os.path.join(prefix, 'bin'),
                                    os.environ['PATH']])
-    print(f"PATH = {os.environ['PATH']}")
 
 
 def conda_activate(env_name):
+    """ Activate a conda environment
+
+    Assume: `conda_init_path` as been called beforehand
+    Warning: Arbitrary code execution is possible here due to `shell` usage.
+
+    :param env_name: str: conda environment to activate
+    :returns: dict: new runtime environment
+    :raises subprocess.CalledProcessError: via check_returncode method
+    """
     proc = run(f"source activate {env_name} && env",
                capture_output=True,
                shell=True)
@@ -62,6 +97,15 @@ def conda_activate(env_name):
 
 @contextmanager
 def conda_env_load(env_name):
+    """ A simple wrapper for `conda_activate`
+    The current runtime environment is replaced and restored
+
+    >>> with conda_env_load('some_env') as _:
+    >>>     # do something
+
+    :param env_name: str: conda environment to activate
+    :returns: None
+    """
     last = os.environ.copy()
     os.environ = conda_activate(env_name)
     try:
@@ -71,4 +115,8 @@ def conda_env_load(env_name):
 
 
 def conda(*args):
+    """ Execute conda shell commands
+
+    :returns: subprocess.CompletedProcess object
+    """
     return sh('conda', *args)

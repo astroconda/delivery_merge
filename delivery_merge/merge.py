@@ -11,17 +11,27 @@ DMFILE_RE = re.compile(r'^(?P<name>.*)[=<>~\!](?P<version>.*).*$')
 
 
 def comment_find(s, delims=[';', '#']):
-    """ Return index of first match
+    """ Find the first occurence of a comment in a string
+
+    :param s: string
+    :param delims: list: of comment delimiters
+    :returns: integer: index of first match
     """
     for delim in delims:
-        pos = s.find(delim)
-        if pos != -1:
+        index = s.find(delim)
+        if index != -1:
             break
 
-    return pos
+    return index
 
 
 def dmfile(filename):
+    """ Return the contents of a file without comments
+
+    :param filename: string: path to file
+    :returns: list: data in file
+    """
+    # TODO: Use DMFILE_RE here instead of `testable_packages`
     result = []
     with open(filename, 'r') as fp:
         for line in fp:
@@ -39,6 +49,15 @@ def dmfile(filename):
 
 
 def env_combine(filename, conda_env, conda_channels=[]):
+    """ Install packages listed in `filename` inside `conda_env`.
+    Packages are quote-escaped to prevent spurious file redirection.
+
+    :param filename: str: path to file
+    :param conda_env: str: conda environment name
+    :param conda_channels: list: channel URLs
+    :returns: None
+    :raises subprocess.CalledProcessError: via check_returncode method
+    """
     packages = []
     channels_result = '--override-channels '
 
@@ -53,11 +72,16 @@ def env_combine(filename, conda_env, conda_channels=[]):
                  conda_env, channels_result, packages_result)
     if proc.stderr:
         print(proc.stderr.decode())
+    proc.check_returncode()
 
 
 def testable_packages(filename, prefix):
     """ Scan a mini/anaconda prefix for unpacked packages matching versions
     requested by dmfile.
+
+    :param filename: str: path to file
+    :param prefix: str: path to conda root directory (aka prefix)
+    :returns: dict: git commit hash and repository URL information
     """
     pkgdir = os.path.join(prefix, 'pkgs')
     paths = []
@@ -96,6 +120,13 @@ def testable_packages(filename, prefix):
 
 
 def integration_test(pkg_data, conda_env, results_root='.'):
+    """
+    :param pkg_data: dict: data returned by `testable_packages` method
+    :param conda_env: str: conda environment name
+    :param results_root: str: path to store XML reports
+    :returns: None
+    :raises subprocess.CalledProcessError: via check_returncode method
+    """
     results_root = os.path.abspath(os.path.join(results_root, 'results'))
     src_root = os.path.abspath('src')
 
