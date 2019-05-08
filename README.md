@@ -1,5 +1,8 @@
 # delivery_merge
 
+[![Build Status](https://dev.azure.com/astroconda/delivery_merge/_apis/build/status/astroconda.delivery_merge?branchName=master)](https://dev.azure.com/astroconda/delivery_merge/_build/latest?definitionId=1&branchName=master)
+
+
 ## What does it do?
 
 1. Install miniconda3 in the current working directory
