@@ -1,10 +1,9 @@
 import os
 import re
 import yaml
-from .conda import conda, conda_env_load
-from .utils import git, pushd
+from .conda import conda, conda_env_load, conda_cmd_channels
+from .utils import git, pushd, sh
 from glob import glob
-from subprocess import run
 
 
 DMFILE_RE = re.compile(r'^(?P<name>[A-z\-_l]+)(?:[=<>\!]+)?(?P<version>[A-z0-9. ]+)?')
@@ -37,9 +36,8 @@ def dmfile(filename):
     """ Return the contents of a file without comments
 
     :param filename: string: path to file
-    :returns: list: data in file
+    :returns: list: of dicts, one per package
     """
-    # TODO: Use DMFILE_RE here instead of `testable_packages`
     result = []
     with open(filename, 'r') as fp:
         for line in fp:
@@ -62,7 +60,8 @@ def dmfile(filename):
                 if version_invalid:
                     raise InvalidPackageSpec(f"'{line}'")
 
-            result.append(line)
+            pkg['fullspec'] = line
+            result.append(pkg)
 
     if not result:
         raise EmptyPackageSpec("Nothing to do")
@@ -81,17 +80,16 @@ def env_combine(filename, conda_env, conda_channels=[]):
     :raises subprocess.CalledProcessError: via check_returncode method
     """
     packages = []
-    channels_result = '--override-channels '
 
-    for line in dmfile(filename):
-        packages.append(f"'{line}'")
-
-    for channel in conda_channels:
-        channels_result += f'-c {channel} '
+    for record in dmfile(filename):
+        packages.append(f"'{record['fullspec']}'")
 
     packages_result = ' '.join([x for x in packages])
-    proc = conda('install', '-q', '-y', '-n',
-                 conda_env, channels_result, packages_result)
+    proc = conda('install', '-q', '-y',
+                 '-n', conda_env,
+                 conda_cmd_channels(conda_channels),
+                 packages_result)
+
     if proc.stderr:
         print(proc.stderr.decode())
 
@@ -109,19 +107,17 @@ def testable_packages(filename, prefix):
     pkgdir = os.path.join(prefix, 'pkgs')
     paths = []
 
-    for line in dmfile(filename):
-        match = DMFILE_RE.match(line)
-        if match:
-            pkg = match.groupdict()
+    for record in dmfile(filename):
+        # Reconstruct ${package}-${version} format (when possible)
+        pattern = f"{record['name']}-"
+        if record['version']:
+            pattern += record['version']
+        pattern += '*'
 
-            # Reconstruct ${package}-${version} format from
-            # ${package}${specifier}${version}
-            pattern = f"{pkg['name']}-{pkg['version']}*"
-
-            # Record path to extracted package
-            path = ''.join([x for x in glob(os.path.join(pkgdir, pattern))
-                            if os.path.isdir(x)])
-            paths.append(path)
+        # Record path to extracted package
+        path = ''.join([x for x in glob(os.path.join(pkgdir, pattern))
+                        if os.path.isdir(x)])
+        paths.append(path)
 
     for root in paths:
         info_d = os.path.join(root, 'info')
@@ -132,7 +128,8 @@ def testable_packages(filename, prefix):
             continue
 
         with open(os.path.join(recipe_d, 'meta.yaml')) as yaml_data:
-            source = yaml.load(yaml_data.read())['source']
+            source = yaml.load(yaml_data.read(),
+                               Loader=yaml.SafeLoader)['source']
 
         if not isinstance(source, dict):
             continue
@@ -147,9 +144,10 @@ def integration_test(pkg_data, conda_env, results_root='.'):
     :param pkg_data: dict: data returned by `testable_packages` method
     :param conda_env: str: conda environment name
     :param results_root: str: path to store XML reports
-    :returns: None
+    :returns: str: path to XML report
     :raises subprocess.CalledProcessError: via check_returncode method
     """
+    results = ''
     results_root = os.path.abspath(os.path.join(results_root, 'results'))
     src_root = os.path.abspath('src')
 
@@ -158,6 +156,7 @@ def integration_test(pkg_data, conda_env, results_root='.'):
 
     with pushd(src_root) as _:
         repo_root = os.path.basename(pkg_data['repo']).replace('.git', '')
+
         if not os.path.exists(repo_root):
             git(f"clone --recursive {pkg_data['repo']} {repo_root}")
 
@@ -168,5 +167,18 @@ def integration_test(pkg_data, conda_env, results_root='.'):
                 results = os.path.abspath(os.path.join(results_root,
                                                        repo_root,
                                                        'result.xml'))
-                run("pip install -e .[test]".split()).check_returncode()
-                run(f"pytest -v --junitxml={results}".split(), check=True)
+                proc_pip = sh("pip", "install -e .[test]")
+                proc_pip_stderr = proc_pip.stderr.decode()
+                if proc_pip.returncode:
+                    print(proc_pip.stderr.decode())
+
+                # Setuptools is busted in conda. Ignore errors related to
+                # easy_install.pth
+                if not 'easy-install.pth' in proc_pip_stderr:
+                    proc_pip.check_returncode()
+
+                proc_pytest = sh("pytest", f"-v --junitxml={results}")
+                if proc_pytest.returncode:
+                    print(proc_pytest.stderr.decode())
+
+    return results
