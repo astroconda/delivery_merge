@@ -7,7 +7,15 @@ from glob import glob
 from subprocess import run
 
 
-DMFILE_RE = re.compile(r'^(?P<name>.*)[=<>~\!](?P<version>.*).*$')
+DMFILE_RE = re.compile(r'^(?P<name>[A-z\-_l]+)(?:[=<>\!]+)?(?P<version>[A-z0-9. ]+)?')
+DMFILE_INVALID_VERSION_RE = re.compile(r'[\ \!\@\#\$\%\^\&\*\(\)\-_]+')
+
+
+class EmptyPackageSpec(Exception):
+    pass
+
+class InvalidPackageSpec(Exception):
+    pass
 
 
 def comment_find(s, delims=[';', '#']):
@@ -44,7 +52,21 @@ def dmfile(filename):
             if not line:
                 continue
 
+            match = DMFILE_RE.match(line)
+            if match is None:
+                raise InvalidPackageSpec(f"'{line}'")
+
+            pkg = match.groupdict()
+            if pkg['version']:
+                version_invalid = DMFILE_INVALID_VERSION_RE.match(pkg['version'])
+                if version_invalid:
+                    raise InvalidPackageSpec(f"'{line}'")
+
             result.append(line)
+
+    if not result:
+        raise EmptyPackageSpec("Nothing to do")
+
     return result
 
 
