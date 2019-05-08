@@ -33,7 +33,7 @@ def getenv(s):
     :param s: str: key pairs separated by newlines
     :returns: dict: converted key pairs
     """
-    return dict([x.split('=', 1) for x in s.splitlines()])
+    return dict([x.split('=', 1) for x in s.splitlines() if x])
 
 
 @contextmanager
