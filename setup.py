@@ -12,5 +12,10 @@ setup(
     install_requires=[
         'requests',
         'pyyaml',
-    ]
+    ],
+    extras_require={
+        'test': [
+            'pytest',
+        ],
+    }
 )
