@@ -38,6 +38,14 @@ class TestUtils:
         for k, v in result.items():
             assert k == v
 
+    def test_getenv_empty_pair(self):
+        result = utils.getenv("INFINITE_FUN=")
+        assert not result.get('INFINITE_FUN')
+
+    def test_getenv_multi_equal(self):
+        result = utils.getenv("INFINITE_FUN=LINE=10")
+        assert result.get('INFINITE_FUN') == 'LINE=10'
+
     def test_getenv_multi_equal(self):
         result = utils.getenv("INFINITE_FUN=LINE=10")
         assert result.get('INFINITE_FUN') == 'LINE=10'
