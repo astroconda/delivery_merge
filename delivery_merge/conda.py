@@ -88,7 +88,7 @@ def conda_activate(env_name):
     :returns: dict: new runtime environment
     :raises subprocess.CalledProcessError: via check_returncode method
     """
-    proc = run(f"source activate {env_name} && env",
+    proc = run(f". activate {env_name} && env",
                capture_output=True,
                shell=True)
     proc.check_returncode()
