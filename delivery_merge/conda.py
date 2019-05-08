@@ -120,3 +120,16 @@ def conda(*args):
     :returns: subprocess.CompletedProcess object
     """
     return sh('conda', *args)
+
+
+def conda_cmd_channels(conda_channels, override=True):
+    """ Generate conda command arguments for handling channels
+    :param conda_channels: list: URI to channel
+    :param override: bool: channel order is preserved when True
+    """
+    assert isinstance(conda_channels, list)
+    channels_result = '--override-channels ' if override else ''
+    for channel in conda_channels:
+        channels_result += f'-c {channel} '
+
+    return channels_result
