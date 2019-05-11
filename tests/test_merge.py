@@ -75,8 +75,8 @@ class TestMerge:
         self.prefix = conda.conda_installer(self.version)
         conda.conda_init_path(self.prefix)
         conda.conda('create', '-q', '-y',
-              '-n',  self.env_name,
-              '--file', self.input_file_base_spec)
+                    '-n',  self.env_name,
+                    '--file', self.input_file_base_spec)
 
     def teardown_class(self):
         pass
@@ -105,7 +105,8 @@ class TestMerge:
         input_data = merge.dmfile(self.input_file)
         output_data = conda.conda(f'list -n {self.env_name}')
         output_data.check_returncode()
-        installed = [x.split()[0] for x in output_data.stdout.decode().splitlines()
+        installed = [x.split()[0]
+                     for x in output_data.stdout.decode().splitlines()
                      if not x.startswith('#')]
         requested = [x['name'] for x in input_data]
         for req in requested:
@@ -122,7 +123,8 @@ class TestMerge:
 
     def test_integration_test(self):
         merge.env_combine(self.input_file, self.env_name, CHANNELS)
-        input_data = list(merge.testable_packages(self.input_file, self.prefix))
+        input_data = list(merge.testable_packages(self.input_file,
+                                                  self.prefix))
         assert input_data
 
         output_dir = 'test_results'
@@ -131,3 +133,9 @@ class TestMerge:
             assert os.path.exists(result)
             contents = open(result).read()
             assert contents.startswith('<?xml') and contents.endswith('</testsuite>')
+
+    def test_force_xunit2(self):
+        assert not os.path.exists('pytest.ini')
+        merge.force_xunit2()
+        assert os.path.exists('pytest.ini')
+        assert 'junit_family = xunit2' in open('pytest.ini').read()

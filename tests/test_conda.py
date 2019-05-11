@@ -1,5 +1,4 @@
 import os
-import pytest
 from delivery_merge import conda
 
 

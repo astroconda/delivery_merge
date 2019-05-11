@@ -1,5 +1,4 @@
 import os
-import pytest
 from delivery_merge import utils
 
 
@@ -46,10 +45,6 @@ class TestUtils:
         result = utils.getenv("INFINITE_FUN=LINE=10")
         assert result.get('INFINITE_FUN') == 'LINE=10'
 
-    def test_getenv_multi_equal(self):
-        result = utils.getenv("INFINITE_FUN=LINE=10")
-        assert result.get('INFINITE_FUN') == 'LINE=10'
-
     def test_pushd(self):
         orig_path = os.path.abspath('.')
         d = os.path.join(orig_path, 'pushd_test')
@@ -58,7 +53,7 @@ class TestUtils:
             os.mkdir(d)
 
         with utils.pushd(d):
-           new_path = os.path.abspath('.')
-           assert new_path == os.path.join(orig_path, d)
+            new_path = os.path.abspath('.')
+            assert new_path == os.path.join(orig_path, d)
 
         assert os.path.abspath('.') == orig_path
