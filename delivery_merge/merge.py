@@ -2,34 +2,22 @@ import os
 import re
 import yaml
 from .conda import conda, conda_env_load, conda_cmd_channels
-from .utils import git, pushd, sh
+from .utils import comment_find, git, pushd, sh
+from configparser import ConfigParser
 from glob import glob
 
 
-DMFILE_RE = re.compile(r'^(?P<name>[A-z\-_l]+)(?:[=<>\!]+)?(?P<version>[A-z0-9. ]+)?')
+DMFILE_RE = re.compile(r'^(?P<name>[A-z\-_l]+)(?:[=<>\!]+)?(?P<version>[A-z0-9. ]+)?')   # noqa
 DMFILE_INVALID_VERSION_RE = re.compile(r'[\ \!\@\#\$\%\^\&\*\(\)\-_]+')
+DELIVERY_NAME_RE = re.compile(r'(?P<name>.*)[-_](?P<version>.*)[-_]py(?P<python_version>\d+)[-_.](?P<iteration>\d+)[-_.](?P<ext>.*)')  # noqa
 
 
 class EmptyPackageSpec(Exception):
     pass
 
+
 class InvalidPackageSpec(Exception):
     pass
-
-
-def comment_find(s, delims=[';', '#']):
-    """ Find the first occurence of a comment in a string
-
-    :param s: string
-    :param delims: list: of comment delimiters
-    :returns: integer: index of first match
-    """
-    for delim in delims:
-        index = s.find(delim)
-        if index != -1:
-            break
-
-    return index
 
 
 def dmfile(filename):
@@ -56,8 +44,8 @@ def dmfile(filename):
 
             pkg = match.groupdict()
             if pkg['version']:
-                version_invalid = DMFILE_INVALID_VERSION_RE.match(pkg['version'])
-                if version_invalid:
+                invalid = DMFILE_INVALID_VERSION_RE.match(pkg['version'])
+                if invalid:
                     raise InvalidPackageSpec(f"'{line}'")
 
             pkg['fullspec'] = line
@@ -162,6 +150,7 @@ def integration_test(pkg_data, conda_env, results_root='.'):
 
         with pushd(repo_root) as _:
             git(f"checkout {pkg_data['commit']}")
+            force_xunit2()
 
             with conda_env_load(conda_env):
                 results = os.path.abspath(os.path.join(results_root,
@@ -174,7 +163,7 @@ def integration_test(pkg_data, conda_env, results_root='.'):
 
                 # Setuptools is busted in conda. Ignore errors related to
                 # easy_install.pth
-                if not 'easy-install.pth' in proc_pip_stderr:
+                if 'easy-install.pth' not in proc_pip_stderr:
                     proc_pip.check_returncode()
 
                 proc_pytest = sh("pytest", f"-v --junitxml={results}")
@@ -182,3 +171,25 @@ def integration_test(pkg_data, conda_env, results_root='.'):
                     print(proc_pytest.stderr.decode())
 
     return results
+
+
+def force_xunit2(project='.'):
+    configs = [os.path.normpath(os.path.join(project, os.path.abspath(x)))
+                            for x in ['pytest.ini', 'setup.cfg']]
+    create_config = not all([os.path.exists(x) for x in configs])
+
+    if create_config:
+        data = """[pytest]\njunit_family = xunit2\n"""
+        with open('pytest.ini', 'w+') as cfg:
+            cfg.write(data)
+        return
+
+    for filename in configs:
+        if not os.path.exists(filename):
+            continue
+
+        cfg = ConfigParser()
+        cfg.read(filename)
+        cfg['tools:pytest']['junit_family'] = 'xunit2'
+        cfg.write(filename)
+        break
