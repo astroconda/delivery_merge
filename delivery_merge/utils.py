@@ -3,6 +3,21 @@ from contextlib import contextmanager
 from subprocess import run
 
 
+def comment_find(s, delims=[';', '#']):
+    """ Find the first occurence of a comment in a string
+
+    :param s: string
+    :param delims: list: of comment delimiters
+    :returns: integer: index of first match
+    """
+    for delim in delims:
+        index = s.find(delim)
+        if index != -1:
+            break
+
+    return index
+
+
 def sh(prog, *args):
     """ Execute a program with arguments
     :param prog: str: path to program
