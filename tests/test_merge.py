@@ -134,8 +134,23 @@ class TestMerge:
             contents = open(result).read()
             assert contents.startswith('<?xml') and contents.endswith('</testsuite>')
 
-    def test_force_xunit2(self):
+    def test_force_xunit2_no_config(self):
         assert not os.path.exists('pytest.ini')
         merge.force_xunit2()
         assert os.path.exists('pytest.ini')
         assert 'junit_family = xunit2' in open('pytest.ini').read()
+
+    def test_force_xunit2_no_setup(self):
+        open('pytest.ini', 'w+').write('')
+        merge.force_xunit2()
+        assert not os.path.exists('setup.cfg')
+        assert os.path.exists('pytest.ini')
+        assert 'junit_family = xunit2' in open('pytest.ini').read()
+
+    def test_force_xunit2_no_pytest(self):
+        open('setup.cfg', 'w+').write('')
+        merge.force_xunit2()
+        assert not os.path.exists('pytest.ini')
+        assert os.path.exists('setup.cfg')
+        assert 'junit_family = xunit2' in open('setup.cfg').read()
+
