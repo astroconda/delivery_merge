@@ -156,7 +156,7 @@ def integration_test(pkg_data, conda_env, results_root='.'):
                 results = os.path.abspath(os.path.join(results_root,
                                                        repo_root,
                                                        'result.xml'))
-                proc_pip = sh("pip", "install -e .[test]")
+                proc_pip = sh("pip", "install -e .[test] pytest ci_watson")
                 proc_pip_stderr = proc_pip.stderr.decode()
                 if proc_pip.returncode:
                     print(proc_pip.stderr.decode())
