@@ -45,6 +45,7 @@ def main():
         proc = conda('create', '-q', '-y', '-n',  name, '--file', base_spec)
         if proc.stderr:
             print(proc.stderr.decode())
+        proc.check_returncode()
 
     print(f"Merging requested packages into environment: {name}")
     env_combine(dmfile, name, channels)
