@@ -190,6 +190,6 @@ def force_xunit2(project='.'):
 
         cfg = ConfigParser()
         cfg.read(filename)
-        cfg['tools:pytest']['junit_family'] = 'xunit2'
+        cfg['tool:pytest']['junit_family'] = 'xunit2'
         cfg.write(filename)
         break
