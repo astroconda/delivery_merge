@@ -174,7 +174,7 @@ def integration_test(pkg_data, conda_env, results_root='.'):
 
 
 def force_xunit2(project='.'):
-    configs = [os.path.normpath(os.path.join(project, os.path.abspath(x)))
+    configs = [os.path.abspath(os.path.join(project, x))
                             for x in ['pytest.ini', 'setup.cfg']]
     create_config = not all([os.path.exists(x) for x in configs])
 
