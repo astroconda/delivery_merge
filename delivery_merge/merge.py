@@ -156,9 +156,15 @@ def integration_test(pkg_data, conda_env, results_root='.'):
                 results = os.path.abspath(os.path.join(results_root,
                                                        repo_root,
                                                        'result.xml'))
-                proc_pip = sh("pip", "install -e .[test] pytest ci_watson")
+                proc_pip_install = sh("pip", "install --upgrade pip")
+                if proc_pip_install.returncode:
+                    print(proc_pip_install.stdout.decode())
+                    print(proc_pip_install.stderr.decode())
+
+                proc_pip = sh("pip", "install -v -e .[test] pytest ci_watson")
                 proc_pip_stderr = proc_pip.stderr.decode()
                 if proc_pip.returncode:
+                    print(proc_pip.stdout.decode())
                     print(proc_pip.stderr.decode())
 
                 # Setuptools is busted in conda. Ignore errors related to
