@@ -111,9 +111,13 @@ def testable_packages(filename, prefix):
         info_d = os.path.join(root, 'info')
         recipe_d = os.path.join(info_d, 'recipe')
         git_log = os.path.join(info_d, 'git')
-        git_log_data = open(git_log).readlines() or []
 
-        if not os.path.exists(git_log) or not git_log_data:
+        if not os.path.exists(git_log):
+            continue
+
+        git_log_data = open(git_log).readlines()
+
+        if not git_log_data:
             continue
 
         with open(os.path.join(recipe_d, 'meta.yaml')) as yaml_data:
@@ -124,7 +128,7 @@ def testable_packages(filename, prefix):
             continue
 
         repository = source['git_url']
-        head = open(git_log).readlines()[1].split()[1]
+        head = git_log_data[1].split()[1]
         yield dict(repo=repository, commit=head)
 
 
