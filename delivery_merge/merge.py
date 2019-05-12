@@ -111,8 +111,9 @@ def testable_packages(filename, prefix):
         info_d = os.path.join(root, 'info')
         recipe_d = os.path.join(info_d, 'recipe')
         git_log = os.path.join(info_d, 'git')
+        git_log_data = open(git_log).readlines() or []
 
-        if not os.path.exists(git_log):
+        if not os.path.exists(git_log) or not git_log_data:
             continue
 
         with open(os.path.join(recipe_d, 'meta.yaml')) as yaml_data:
