@@ -175,7 +175,7 @@ def integration_test(pkg_data, conda_env, results_root='.'):
                 if 'consider upgrading' not in proc_pip_stderr:
                     proc_pip.check_returncode()
 
-                proc_pytest = sh("pytest", f"-v --junitxml={results}")
+                proc_pytest = sh("pytest", f"-v --basetemp=.tmp --junitxml={results}")
                 if proc_pytest.returncode:
                     print(proc_pytest.stderr.decode())
 
