@@ -175,21 +175,22 @@ def integration_test(pkg_data, conda_env, results_root='.'):
 
 def force_xunit2(project='.'):
     configs = [os.path.abspath(os.path.join(project, x))
-                            for x in ['pytest.ini', 'setup.cfg']]
-    create_config = not all([os.path.exists(x) for x in configs])
+               for x in ['pytest.ini', 'setup.cfg']]
 
-    if create_config:
+    if any([os.path.exists(x) for x in configs]):
+        for filename in configs:
+            if not os.path.exists(filename):
+                continue
+
+            cfg = ConfigParser()
+            cfg.read(filename)
+            cfg['tool:pytest'] = {'junit_family': 'xunit2'}
+            with open(filename, 'w') as data:
+                cfg.write(data)
+            break
+    else:
         data = """[pytest]\njunit_family = xunit2\n"""
         with open('pytest.ini', 'w+') as cfg:
             cfg.write(data)
         return
 
-    for filename in configs:
-        if not os.path.exists(filename):
-            continue
-
-        cfg = ConfigParser()
-        cfg.read(filename)
-        cfg['tool:pytest']['junit_family'] = 'xunit2'
-        cfg.write(filename)
-        break
