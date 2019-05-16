@@ -1,6 +1,7 @@
 import os
 import pytest
 from delivery_merge import conda, merge
+from ruamel.yaml import YAML
 
 
 CHANNELS = ['http://ssb.stsci.edu/astroconda',
@@ -28,6 +29,16 @@ https://repo.anaconda.com/pkgs/main/linux-64/setuptools-41.0.1-py37_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/wheel-0.33.1-py37_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/pip-19.1-py37_0.tar.bz2
 """
+BASE_YML = """name: simple_env
+channels:
+  - this
+  - order
+  - i
+  - want
+dependencies:
+  - some_package=1.2.3
+"""
+CHANNELS_YML = ['i', 'want', 'this', 'order']
 COMMENTS_DELIM = [';', '#']
 COMMENTS = """; comment
 ; comment ; comment
@@ -67,6 +78,7 @@ class TestMerge:
         self.input_file = 'sample.dm'
         self.input_file_invalid = 'sample_invalid.dm'
         self.input_file_empty = 'sample_empty.dm'
+        self.yaml = YAML()
         open(self.input_file, 'w+').write(DMFILE)
         open(self.input_file_invalid, 'w+').write(DMFILE_INVALID)
         open(self.input_file_empty, 'w+').write("")
@@ -155,4 +167,11 @@ class TestMerge:
         assert os.path.exists('setup.cfg')
         assert 'junit_family = xunit2' in open('setup.cfg').read()
         os.remove('setup.cfg')
+
+    def test_force_yaml_channels(self):
+        filename = 'channels.yml'
+        open(filename, 'w+').write(BASE_YML)
+        assert self.yaml.load(open(filename))['channels']
+        merge.force_yaml_channels('channels.yml', CHANNELS_YML)
+        assert self.yaml.load(open(filename))['channels'] == CHANNELS_YML
 

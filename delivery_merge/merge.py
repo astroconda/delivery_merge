@@ -1,10 +1,11 @@
 import os
 import re
-import yaml
+import sys
 from .conda import conda, conda_env_load, conda_cmd_channels
 from .utils import comment_find, git, pushd, sh
 from configparser import ConfigParser
 from glob import glob
+from ruamel.yaml import YAML
 
 
 DMFILE_RE = re.compile(r'^(?P<name>[A-z\-_l]+)(?:[=<>\!]+)?(?P<version>[A-z0-9. ]+)?')   # noqa
@@ -94,6 +95,7 @@ def testable_packages(filename, prefix):
     """
     pkgdir = os.path.join(prefix, 'pkgs')
     paths = []
+    yaml = YAML(typ='safe')
 
     for record in dmfile(filename):
         # Reconstruct ${package}-${version} format (when possible)
@@ -121,8 +123,7 @@ def testable_packages(filename, prefix):
             continue
 
         with open(os.path.join(recipe_d, 'meta.yaml')) as yaml_data:
-            source = yaml.load(yaml_data.read(),
-                               Loader=yaml.SafeLoader)['source']
+            source = yaml.load(yaml_data)['source']
 
         if not isinstance(source, dict):
             continue
@@ -181,6 +182,7 @@ def integration_test(pkg_data, conda_env, results_root='.'):
                     proc_pip.check_returncode()
 
                 proc_pytest = sh("pytest", f"-v --basetemp=.tmp --junitxml={results}")
+                print(proc_pytest.stdout.decode())
                 if proc_pytest.returncode:
                     print(proc_pytest.stderr.decode())
 
@@ -188,6 +190,9 @@ def integration_test(pkg_data, conda_env, results_root='.'):
 
 
 def force_xunit2(project='.'):
+    """ Set project configuration to emit xunit2 regardless of orignal settings
+    :param project: str: path project (i.e. source directory)
+    """
     configs = [os.path.abspath(os.path.join(project, x))
                for x in ['pytest.ini', 'setup.cfg']]
 
@@ -208,3 +213,29 @@ def force_xunit2(project='.'):
             cfg.write(data)
         return
 
+
+def force_yaml_channels(yamlfile, channels):
+    """ Replace the `channels:` block with `channels`
+    :param yamlfile: str: path to yaml file
+    :param channels: list: channel URLs
+    """
+    if not isinstance(channels, list):
+        raise TypeError("Expecting a list of URLs")
+
+    yaml = YAML()
+    yaml.default_flow_style = False
+    yaml.indent(offset=2)
+
+    with open(yamlfile) as yaml_data:
+        result = yaml.load(yaml_data)
+
+    if not result.get('channels'):
+        print(f"{yamlfile} has no channels", file=sys.stderr)
+        return
+
+    # Assuming there's a reason to change the file...
+    if result['channels'] != channels:
+        result['channels'] = channels
+
+        with open(yamlfile, 'w') as fp:
+            yaml.dump(result, fp)
