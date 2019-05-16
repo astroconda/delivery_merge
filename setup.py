@@ -17,6 +17,7 @@ setup(
         'test': [
             'pytest',
             'pytest-cov',
+            'codecov',
         ],
     }
 )
