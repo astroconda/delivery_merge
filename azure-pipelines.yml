@@ -26,7 +26,7 @@ steps:
 
 - script: |
     python -m pip install pytest pytest-azurepipelines pytest-cov codecov
-    pytest -v --cov=delivery_merge --cov-report=xml
+    pytest -v --cov=delivery_merge --cov-report=xml tests
     codecov -t $codecov_token
   env:
     codecov_token: $(CODECOV_TOKEN)
