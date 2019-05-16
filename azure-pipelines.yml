@@ -25,7 +25,7 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    python -m pip install pytest pytest-azurepipelines pytest-codecov
+    python -m pip install pytest pytest-azurepipelines pytest-cov codecov
     pytest -v --cov=delivery_merge --cov-report=xml
     codecov --file coverage.xml
   displayName: 'pytest'
