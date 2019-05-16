@@ -11,7 +11,7 @@ setup(
     },
     install_requires=[
         'requests',
-        'pyyaml',
+        'ruamel.yaml',
     ],
     extras_require={
         'test': [

@@ -1,6 +1,11 @@
 import os
 from ..conda import conda, conda_installer, conda_init_path
-from ..merge import env_combine, testable_packages, integration_test
+from ..merge import (
+    env_combine,
+    testable_packages,
+    integration_test,
+    force_yaml_channels
+)
 from argparse import ArgumentParser
 
 
@@ -52,6 +57,9 @@ def main():
 
     print("Exporting yaml configuration...")
     conda('env', 'export', '-n', name, '--file', yamlfile)
+
+    print("Fix up yaml channel order...")
+    force_yaml_channels(yamlfile, channels)
 
     print("Exporting explicit dump...")
     with open(specfile, 'w+') as spec:
