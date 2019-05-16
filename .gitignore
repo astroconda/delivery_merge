@@ -2,6 +2,8 @@
 *.sh
 *.sk
 __pycache__
+build
+dist
 results
 src
 miniconda*
