@@ -13,6 +13,22 @@ class BadPlatform(Exception):
     pass
 
 
+def ei_touch():
+    py_version = sh('python', '--version').stdout.decode().strip().split()[1]
+    py_version = '.'.join(py_version.split('.')[:2])
+    root = run("python -c 'import sys; print(sys.prefix)'",
+               capture_output=True,
+               shell=True,
+               env=os.environ).stdout.decode().strip()
+    libsp = ['lib', f'python{py_version}', 'site-packages']
+    site_packages = os.path.join(root, *libsp)
+    pthfile = os.path.join(site_packages, 'easy-install.pth')
+
+    print('PTHFILE = {}'.format(pthfile))
+    if not os.path.exists(pthfile):
+        open(pthfile, 'w+').write('')
+
+
 def conda_installer(ver, prefix='./miniconda3'):
     """ Install miniconda into a user-defined prefix and return its path
 
@@ -59,7 +75,7 @@ def conda_installer(ver, prefix='./miniconda3'):
         os.chmod(installer, 0o755)
 
     # Perform installation
-    run(install_command).check_returncode()
+    run(install_command, env=os.environ).check_returncode()
 
     return prefix
 
@@ -78,6 +94,17 @@ def conda_init_path(prefix):
                                    os.environ['PATH']])
 
 
+def conda_site():
+    """ Retrieve current environment's site-packages path
+    """
+    result = run("python -c 'import site; print(site.getsitepackages()[-1])'",
+                 capture_output=True,
+                 shell=True,
+                 env=os.environ)
+    result.check_returncode()
+    return result.stdout.decode().strip()
+
+
 def conda_activate(env_name):
     """ Activate a conda environment
 
@@ -90,7 +117,8 @@ def conda_activate(env_name):
     """
     proc = run(f". activate {env_name} && env",
                capture_output=True,
-               shell=True)
+               shell=True,
+               env=os.environ)
     proc.check_returncode()
     return getenv(proc.stdout.decode()).copy()
 

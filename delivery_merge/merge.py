@@ -1,7 +1,7 @@
 import os
 import re
 import sys
-from .conda import conda, conda_env_load, conda_cmd_channels
+from .conda import conda, conda_env_load, conda_cmd_channels, ei_touch
 from .utils import comment_find, git, pushd, sh
 from configparser import ConfigParser
 from glob import glob
@@ -74,15 +74,19 @@ def env_combine(filename, conda_env, conda_channels=[]):
         packages.append(f"'{record['fullspec']}'")
 
     packages_result = ' '.join([x for x in packages])
-    proc = conda('install', '-q', '-y',
-                 '-n', conda_env,
-                 conda_cmd_channels(conda_channels),
-                 packages_result)
 
-    if proc.stderr:
-        print(proc.stderr.decode())
+    with conda_env_load(conda_env):
+        ei_touch()
+        # Perform package installation
+        proc = conda('install', '-q', '-y',
+                     '-n', conda_env,
+                     conda_cmd_channels(conda_channels),
+                     packages_result)
 
-    proc.check_returncode()
+        if proc.stderr:
+            print(proc.stderr.decode())
+
+        proc.check_returncode()
 
 
 def testable_packages(filename, prefix):
@@ -159,29 +163,33 @@ def integration_test(pkg_data, conda_env, results_root='.'):
             force_xunit2()
 
             with conda_env_load(conda_env):
+                ei_touch()
                 results = os.path.abspath(os.path.join(results_root,
                                                        repo_root,
                                                        'result.xml'))
-                proc_pip_install = sh("pip", "install --upgrade pip")
+
+                conda("uninstall", "-y", repo_root)
+
+                proc_pip_install = sh("python", "-m pip install --upgrade pip pytest ci-watson")
                 if proc_pip_install.returncode:
                     print(proc_pip_install.stdout.decode())
                     print(proc_pip_install.stderr.decode())
 
-                proc_pip = sh("pip", "install -v -e .[test] pytest ci_watson")
+                proc_pip = sh("python", "-m pip install -v .[test]")
                 proc_pip_stderr = proc_pip.stderr.decode()
                 if proc_pip.returncode:
                     print(proc_pip.stdout.decode())
                     print(proc_pip.stderr.decode())
 
-                # Setuptools is busted in conda. Ignore errors related to
-                # easy_install.pth
-                if 'easy-install.pth' not in proc_pip_stderr:
-                    proc_pip.check_returncode()
-
                 if 'consider upgrading' not in proc_pip_stderr:
                     proc_pip.check_returncode()
 
-                proc_pytest = sh("pytest", f"-v --basetemp=.tmp --junitxml={results}")
+                proc_egg = sh("python", "setup.py egg_info")
+                if proc_egg.returncode:
+                    print(proc_egg.stdout.decode())
+                    print(proc_egg.stderr.decode())
+
+                proc_pytest = sh("python", "-m pytest", f"-v --basetemp=.tmp --junitxml={results}")
                 print(proc_pytest.stdout.decode())
                 if proc_pytest.returncode:
                     print(proc_pytest.stderr.decode())
