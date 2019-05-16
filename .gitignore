@@ -8,3 +8,5 @@ results
 src
 miniconda*
 anaconda*
+.coverage
+coverage.xml

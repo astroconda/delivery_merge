@@ -1,5 +1,5 @@
 import os
-from ..conda import conda, conda_installer, conda_init_path
+from ..conda import conda, conda_installer, conda_init_path, ei_touch
 from ..merge import (
     env_combine,
     testable_packages,
@@ -44,6 +44,7 @@ def main():
 
     prefix = conda_installer(args.installer_version)
     conda_init_path(prefix)
+    ei_touch()
 
     if not os.path.exists(os.path.join(prefix, 'envs', name)):
         print(f"Creating environment {name}...")

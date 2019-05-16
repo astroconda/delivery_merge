@@ -32,7 +32,7 @@ def sh(prog, *args):
 
     command += tmp
     print(f'Running: {" ".join(command)}')
-    return run(command, capture_output=True)
+    return run(command, capture_output=True, env=os.environ)
 
 
 def git(*args):
@@ -70,4 +70,3 @@ def pushd(path):
         yield
     finally:
         os.chdir(last)
-
