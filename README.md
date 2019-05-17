@@ -1,7 +1,7 @@
 # delivery_merge
 
 [![Build Status](https://dev.azure.com/astroconda/delivery_merge/_apis/build/status/astroconda.delivery_merge?branchName=master)](https://dev.azure.com/astroconda/delivery_merge/_build/latest?definitionId=1&branchName=master)
-
+[![codecov](https://codecov.io/gh/astroconda/delivery_merge/branch/master/graph/badge.svg)](https://codecov.io/gh/astroconda/delivery_merge)
 
 ## What does it do?
 

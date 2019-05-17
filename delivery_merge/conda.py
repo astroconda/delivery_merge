@@ -24,7 +24,6 @@ def ei_touch():
     site_packages = os.path.join(root, *libsp)
     pthfile = os.path.join(site_packages, 'easy-install.pth')
 
-    print('PTHFILE = {}'.format(pthfile))
     if not os.path.exists(pthfile):
         open(pthfile, 'w+').write('')
 
